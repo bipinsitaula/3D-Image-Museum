@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#000000" />
+    <title>Bipin's 3D Image Museum</title>
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="preload" as="image" href="/logo.webp" />
+    <link rel="stylesheet" href="/src/ui.css" />
+  </head>
+  <body>
+    <div id="app"></div>
+
+    <div id="crosshair" aria-hidden="true"></div>
+    <div id="hint" class="hidden" role="status"></div>
+
+    <div id="joystick" aria-hidden="true"><div id="joystick-knob"></div></div>
+
+    <button id="menu-btn" type="button" aria-label="Open menu"><img src="/icon.webp" alt="" /></button>
+    <div id="curator-pill" hidden>Curator mode</div>
+
+    <!-- Loading screen, start menu and pause menu (one screen, three modes) -->
+    <div id="menu" class="overlay open" data-mode="loading" role="dialog" aria-modal="true" aria-label="Menu">
+      <div class="menu-card">
+        <img class="menu-logo" src="/logo.webp" alt="Bipin's 3D Image Museum" width="1200" height="800" />
+        <p class="menu-tag" id="menu-tag">Walk through the collection</p>
+
+        <div class="menu-loading">
+          <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"><i id="menu-bar"></i></div>
+          <p id="menu-status">Opening the doors…</p>
+        </div>
+
+        <nav class="menu-buttons">
+          <button type="button" class="menu-primary" id="menu-enter">
+            <span>Enter the museum</span>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
+          <div class="menu-grid">
+            <button type="button" id="menu-home">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg>
+              <span>Entrance</span>
+            </button>
+            <button type="button" id="menu-help-btn" aria-expanded="false">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="2"/><path d="M6.5 10h.01M10 10h.01M13.5 10h.01M17 10h.01M7 14h10"/></svg>
+              <span>Controls</span>
+            </button>
+            <button type="button" id="menu-fullscreen">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+              <span>Full screen</span>
+            </button>
+            <button type="button" id="menu-admin">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+              <span>Curator</span>
+            </button>
+          </div>
+          <ul id="menu-help" hidden></ul>
+        </nav>
+        <p class="menu-foot" id="menu-foot"></p>
+      </div>
+    </div>
+
+    <!-- Image viewer -->
+    <div id="viewer" class="overlay dark" role="dialog" aria-modal="true" aria-label="Image viewer">
+      <button class="close" type="button" data-close aria-label="Close">×</button>
+      <div id="viewer-stage"><img id="viewer-img" alt="" draggable="false" /></div>
+      <div id="viewer-text">
+        <h2 id="viewer-title"></h2>
+        <p id="viewer-caption"></p>
+      </div>
+    </div>
+
+    <!-- Curator login -->
+    <div id="login" class="overlay top" role="dialog" aria-modal="true" aria-labelledby="login-heading">
+      <form class="auth" id="login-form">
+        <button class="close" type="button" data-close aria-label="Close">×</button>
+        <img class="auth-icon" src="/icon.webp" alt="" />
+        <h2 id="login-heading">Curator access</h2>
+        <p class="auth-sub">Enter the curator password to hang, edit and remove pictures.</p>
+        <label class="auth-label" for="login-password">Password</label>
+        <div class="auth-field">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+          <input id="login-password" type="password" autocomplete="current-password" placeholder="Curator password" required />
+          <button type="button" id="login-toggle" aria-label="Show password" aria-pressed="false">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+        <p class="auth-caps" id="login-caps" hidden>Caps Lock is on</p>
+        <p class="error" id="login-error" role="alert"></p>
+        <button class="auth-submit" type="submit"><span>Unlock curator mode</span></button>
+        <p class="auth-foot">Visitors don’t need a password — only the curator can change the collection.</p>
+      </form>
+    </div>
+
+    <!-- Admin frame panel -->
+    <div id="panel" class="overlay" role="dialog" aria-modal="true" aria-labelledby="panel-heading">
+      <form class="card" id="panel-form">
+        <button class="close" type="button" data-close aria-label="Close">×</button>
+        <h2 id="panel-heading">Frame</h2>
+        <img id="panel-preview" alt="" hidden />
+        <div class="row tight">
+          <label class="file">
+            <input id="panel-file" type="file" accept="image/*" />
+            <span id="panel-file-label">Choose image…</span>
+          </label>
+          <button class="ghost" type="button" id="panel-edit">Crop &amp; edit</button>
+        </div>
+        <span class="field-label" id="panel-style-label">Frame design</span>
+        <div id="panel-styles" role="radiogroup" aria-labelledby="panel-style-label"></div>
+        <label for="panel-title">Title</label>
+        <input id="panel-title" type="text" maxlength="120" autocomplete="off" />
+        <label for="panel-caption">Caption</label>
+        <textarea id="panel-caption" rows="2" maxlength="1000"></textarea>
+        <p class="error" id="panel-error" role="alert"></p>
+        <div class="row">
+          <button class="danger" type="button" id="panel-remove">Remove</button>
+          <button class="primary" type="submit" id="panel-save">Save</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Admin section board -->
+    <div id="section" class="overlay" role="dialog" aria-modal="true" aria-labelledby="section-heading">
+      <form class="card" id="section-form">
+        <button class="close" type="button" data-close aria-label="Close">×</button>
+        <h2 id="section-heading">Section board</h2>
+        <label for="section-title">Title</label>
+        <input id="section-title" type="text" maxlength="60" autocomplete="off" />
+        <label for="section-text">Text on the board</label>
+        <textarea id="section-text" rows="6" maxlength="400"></textarea>
+        <p class="note">Shown on this section's boards and above the doors that lead into it.</p>
+        <p class="error" id="section-error" role="alert"></p>
+        <div class="row">
+          <button class="primary" type="submit" id="section-save">Save</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Remove-picture confirmation -->
+    <div id="confirm" class="overlay top" role="alertdialog" aria-modal="true" aria-labelledby="confirm-heading" aria-describedby="confirm-text">
+      <div class="auth confirm">
+        <img id="confirm-thumb" alt="" />
+        <h2 id="confirm-heading">Remove this picture?</h2>
+        <p class="auth-sub" id="confirm-text"></p>
+        <div class="confirm-actions">
+          <button type="button" id="confirm-cancel">Keep it</button>
+          <button type="button" id="confirm-ok">Remove</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Image editor -->
+    <div id="editor" class="overlay dark top" role="dialog" aria-modal="true" aria-label="Edit image">
+      <div id="editor-stage">
+        <div id="editor-frame">
+          <canvas id="editor-canvas"></canvas>
+          <div id="editor-crop">
+            <i data-h="nw"></i><i data-h="n"></i><i data-h="ne"></i><i data-h="e"></i>
+            <i data-h="se"></i><i data-h="s"></i><i data-h="sw"></i><i data-h="w"></i>
+          </div>
+        </div>
+      </div>
+      <div id="editor-tools">
+        <div class="tool-row" id="editor-ratios" role="radiogroup" aria-label="Crop shape"></div>
+        <div class="tool-row">
+          <button type="button" id="editor-rot-l" title="Rotate left">⟲ Rotate</button>
+          <button type="button" id="editor-rot-r" title="Rotate right">Rotate ⟳</button>
+          <button type="button" id="editor-flip">⇋ Flip</button>
+          <button type="button" id="editor-reset">Reset</button>
+        </div>
+        <div class="tool-row sliders">
+          <label>Brightness <input type="range" id="editor-brightness" min="50" max="150" value="100" /></label>
+          <label>Contrast <input type="range" id="editor-contrast" min="50" max="150" value="100" /></label>
+          <label>Colour <input type="range" id="editor-saturation" min="0" max="200" value="100" /></label>
+        </div>
+        <div class="tool-row end">
+          <button type="button" id="editor-cancel">Cancel</button>
+          <button type="button" class="apply" id="editor-apply">Apply</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="toast" role="status"></div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
